@@ -1,0 +1,16 @@
+# "http://{0}/v1/camera/shoot"
+# "http://{0}/v1/props"
+# "http://{0}/v1/params/camera"
+# "http://{0}/v1/photos"
+# "http://{0}/v1/photos/{1}?size={2}"
+# "http://{0}/v1/photos/{1}/info"
+# "http://{0}/v1/liveview"
+
+export IP=192.168.0.1 #// we are always at this IP address, since the camera owns the network
+
+curl -d "af=auto" -X POST http://$IP/v1/camera/shoot > shoot.json
+# curl -d "af=off" -X POST http://$IP/v1/camera/shoot
+curl -X GET http://$IP/v1/props > props.json
+curl -X GET http://$IP/v1/params/camera > params.json
+curl -X GET http://$IP/v1/photos > photos.json
+#curl -X GET http://$IP/v1/photos/107_0312/IMGP2544.JPG
