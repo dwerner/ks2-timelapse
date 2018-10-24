@@ -1,9 +1,24 @@
-extern crate timelapse;
-use timelapse::ks2;
+extern crate ks2_timelapse;
+extern crate tokio;
+extern crate futures;
 
-fn main() {
-    println!("Hello, world!");
-    ks2::something();
+use futures::{
+    Future,
+    Stream,
+};
+
+use std::error::Error;
+
+fn main() -> Result<(), Box<Error>> {
+
+    let runtime = tokio::runtime::Runtime::new()?;
+
+    let photo_stream = ks2_timelapse::PhotoStream::new();
+
+    runtime.spawn(photo_stream);
+
+    runtime.shutdown_on_idle().wait().unwrap();
+    Ok(())
 }
 
 
