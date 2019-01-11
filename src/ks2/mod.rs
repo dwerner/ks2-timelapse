@@ -1,8 +1,10 @@
 // {"errCode": 412,"errMsg": "Precondition Failed"}
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct KS2Response {
-  errCode: u64
+    #[serde(rename="errCode")]
+    pub err_code: u32,
+    #[serde(rename="errMsg")]
+    pub err_msg: String,
 }
 
 // {"errCode": 200,
@@ -12,11 +14,17 @@ pub struct KS2Response {
 // "captured": false}
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ShootResponse {
-    err_code: u32,
-    err_msg: String,
-    focused: bool,
-    //focus_centers: Vec<?>,
-    captured: bool
+
+    #[serde(rename="errCode")]
+    pub err_code: u32,
+    #[serde(rename="errMsg")]
+    pub err_msg: String,
+
+    pub focused: bool,
+
+    //pub focus_centers: Vec<?>,
+
+    pub captured: bool
 }
 
 //
@@ -27,13 +35,13 @@ pub struct ShootResponse {
 // ]}
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PhotosResponse {
-    err_code: u32,
-    err_msg: String,
-    dirs: Vec<ImgDir>
+    pub err_code: u32,
+    pub err_msg: String,
+    pub dirs: Vec<ImgDir>
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ImgDir {
-    name: String,
-    files: Vec<String>
+    pub name: String,
+    pub files: Vec<String>
 }
