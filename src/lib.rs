@@ -16,11 +16,9 @@ use futures::{
 
 use std::path::PathBuf;
 
-use tokio::timer::Interval;
-use tokio::runtime::Runtime;
-
 use ks2::ShootResponse;
 
+#[derive(Debug)]
 pub struct Camera {
     ip: String,
     out_dir: PathBuf,
@@ -52,6 +50,7 @@ impl Camera {
         }
     }
 
+    // Ideally, take a photo, download it to the fs, delete it, and return path to it.
     pub fn take_photo(&self) -> impl Future<Item=ShootResponse, Error=FetchError> {
         let client = hyper::Client::new();
         let url = format!("http://{}/camera/shoot", self.ip);
@@ -69,6 +68,7 @@ impl Camera {
                 Ok(shoot_response)
             }).from_err()
         );
+
         req
     }
 }
