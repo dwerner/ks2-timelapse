@@ -27,7 +27,8 @@ pub struct Camera {
 #[derive(Debug)]
 pub enum FetchError {
     Http(hyper::Error),
-    Json(serde_json::Error)
+    Json(serde_json::Error),
+    Timer(tokio::timer::Error),
 }
 
 impl From<hyper::Error> for FetchError {
@@ -39,6 +40,12 @@ impl From<hyper::Error> for FetchError {
 impl From<serde_json::Error> for FetchError {
     fn from(err: serde_json::Error) -> FetchError {
         FetchError::Json(err)
+    }
+}
+
+impl From<tokio::timer::Error> for FetchError {
+    fn from(err: tokio::timer::Error) -> FetchError {
+        FetchError::Timer(err)
     }
 }
 
