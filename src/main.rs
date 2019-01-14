@@ -17,7 +17,9 @@ fn main() -> Result<(), Box<Error>> {
     let mut runtime = tokio::runtime::Runtime::new()?;
 
     let camera = ks2_timelapse::Camera::new();
-    let timer_interval = Duration::from_secs(15);
+
+    // TODO: config value
+    let timer_interval = Duration::from_secs(10);
 
     let photo_stream = Interval::new_interval(timer_interval).from_err().and_then(move |_interval| {
         camera.take_photo()
