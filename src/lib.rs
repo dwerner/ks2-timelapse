@@ -32,6 +32,7 @@ pub enum FetchError {
     Http(hyper::Error),
     Json(serde_json::Error),
     Timer(tokio::timer::Error),
+    Timeout,
 }
 
 impl From<hyper::Error> for FetchError {
@@ -49,6 +50,14 @@ impl From<serde_json::Error> for FetchError {
 impl From<tokio::timer::Error> for FetchError {
     fn from(err: tokio::timer::Error) -> FetchError {
         FetchError::Timer(err)
+    }
+}
+
+impl <T> From<tokio::timer::timeout::Error<T>> for FetchError {
+    // We're choosing to ignore any details of this error for now - it shouldn't be practically
+    // relevant
+    fn from(_err: tokio::timer::timeout::Error<T>) -> FetchError {
+        FetchError::Timeout
     }
 }
 
@@ -85,12 +94,13 @@ impl Camera {
         let url = format!("http://{}/v1/camera/shoot", self.ip);
         let mut req = hyper::Request::post(url);
         let req = Box::new(
-            client.request(req.body(hyper::Body::empty()).unwrap())
+            client.request( req.body(hyper::Body::empty()).unwrap() )
             .and_then(|res| {
                 res.into_body().concat2()
             })
             .from_err::<FetchError>()
             .and_then(|body| {
+                //TODO: actually write the file to disk, return json and a filename?
                 //let content = body.to_vec();
                 //let resp = String::from_utf8(content.clone()).unwrap();
                 //println!("response: {}", resp);

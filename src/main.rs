@@ -10,21 +10,21 @@ use std::error::Error;
 use std::io::BufReader;
 use std::fs::File;
 use std::time::{ Duration, Instant };
-use futures::{ Future, Stream, };
+use futures::{ future, Future, stream, Stream, };
 use tokio::timer::Interval;
+use tokio::prelude::FutureExt;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Config {
-
     #[serde(default)]
     pub delay: u64,
-
+    pub timeout: u64,
     pub output: String,
 }
 
 impl Default for Config {
     fn default() -> Config {
-        Config{ delay: 60, output: "out".to_string() }
+        Config{ delay: 60, timeout:1, output: "out".to_string() }
     }
 }
 
@@ -46,24 +46,40 @@ fn main() -> Result<(), Box<Error>> {
     let camera = ks2_timelapse::Camera::new();
 
     let timer_interval = Duration::from_secs(config.delay);
+    let timeout = Duration::from_secs(config.timeout);
+    assert!(timer_interval > timeout, "delay must be greater than timeout");
 
-    let photo_stream = Interval::new_interval(timer_interval).from_err().and_then(move |_interval| {
+    let immediate = Instant::now();
+    let immediate = future::ok(immediate).into_stream();
+
+    let interval = Interval::new_interval(timer_interval);
+    let photo_stream = immediate.select(interval)
+    .from_err::<ks2_timelapse::FetchError>()
+    .and_then(move |_interval| {
+        println!("hit interval");
         camera.take_photo()
-    });
+            .timeout(timeout)
+            .from_err()
+    })
+    .then(|r| match r {
+        Ok(x) => Ok(Some(x)),
+        Err(e) => {
+            // log, but ignore this error
+            eprintln!("Error: {:?}", e);
+            Ok(None)
+        }
+    }).filter_map(|x| x);
 
-    let photo_stream = photo_stream.for_each(|r| {
+    let photo_stream = photo_stream
+        .for_each(|r| {
         let now = Instant::now();
         println!("took photo at {:?}", now);
         println!("response {:#?}", r);
         Ok(())
-    })
-    .map_err(|e| {
-        println!("{:?}", e);
     });
 
     runtime.spawn(photo_stream);
     runtime.shutdown_on_idle().wait().unwrap();
     Ok(())
 }
-
 

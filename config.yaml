@@ -1,2 +1,3 @@
 delay: 10
+timeout: 3
 output: "output/"
