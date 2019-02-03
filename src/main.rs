@@ -7,41 +7,18 @@ extern crate serde_derive;
 extern crate serde_yaml;
 
 use std::error::Error;
-use std::io::BufReader;
 use std::fs::File;
 use std::time::{ Duration, Instant };
-use futures::{ future, Future, stream, Stream, };
+use futures::{ future, Future, Stream, };
 use tokio::timer::Interval;
 use tokio::prelude::FutureExt;
-
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct Config {
-    #[serde(default)]
-    pub delay: u64,
-    pub timeout: u64,
-    pub output: String,
-}
-
-impl Default for Config {
-    fn default() -> Config {
-        Config{ delay: 60, timeout:1, output: "out".to_string() }
-    }
-}
-
-impl Config {
-    pub fn load_file(path: &str) -> Result<Self, Box<Error>> {
-        let file = File::open(path)?;
-        let reader = BufReader::new(file);
-        Ok(serde_yaml::from_reader(reader)?)
-    }
-}
 
 fn main() -> Result<(), Box<Error>> {
 
     let mut runtime = tokio::runtime::Runtime::new()?;
 
     let path = "config.yaml";
-    let config = Config::load_file(path)?;
+    let config = ks2_timelapse::Config::load_file(path)?;
     println!("Loaded config {} : {:?}", path, config);
     let camera = ks2_timelapse::Camera::new();
 
@@ -49,6 +26,8 @@ fn main() -> Result<(), Box<Error>> {
     let timeout = Duration::from_secs(config.timeout);
     assert!(timer_interval > timeout, "delay must be greater than timeout");
 
+    // because an interval waits N seconds first, create an initial "immediate" interval to start
+    // things off
     let immediate = Instant::now();
     let immediate = future::ok(immediate).into_stream();
 
@@ -64,17 +43,16 @@ fn main() -> Result<(), Box<Error>> {
     .then(|r| match r {
         Ok(x) => Ok(Some(x)),
         Err(e) => {
-            // log, but ignore this error
+            // log, but ignore errors in this stream because we want to continue to process the
+            // next interval. If we were to return an Err(_) here, it would stop the stream
             eprintln!("Error: {:?}", e);
             Ok(None)
         }
     }).filter_map(|x| x);
 
-    let photo_stream = photo_stream
-        .for_each(|r| {
+    let photo_stream = photo_stream.for_each(|r| {
         let now = Instant::now();
-        println!("took photo at {:?}", now);
-        println!("response {:#?}", r);
+        println!("took photo at {:?} response {:#?}", now, r);
         Ok(())
     });
 

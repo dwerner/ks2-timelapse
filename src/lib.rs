@@ -14,12 +14,37 @@ use futures::{
     Stream,
 };
 
+use std::fs::File;
+use std::io::BufReader;
 use std::path::PathBuf;
+use std::error::Error;
 
 use ks2::{
     ShootResponse,
     PhotosResponse,
 };
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Config {
+    #[serde(default)]
+    pub delay: u64,
+    pub timeout: u64,
+    pub output: String,
+}
+
+impl Default for Config {
+    fn default() -> Config {
+        Config{ delay: 60, timeout:1, output: "out".to_string() }
+    }
+}
+
+impl Config {
+    pub fn load_file(path: &str) -> Result<Self, Box<Error>> {
+        let file = File::open(path)?;
+        let reader = BufReader::new(file);
+        Ok(serde_yaml::from_reader(reader)?)
+    }
+}
 
 #[derive(Debug)]
 pub struct Camera {
